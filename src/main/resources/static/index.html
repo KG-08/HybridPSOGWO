@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Hybrid PSO-GWO Cloud Scheduler</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background: #f4f6f8;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .task-input {
+            padding: 10px;
+            width: 80px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+        }
+
+        .run {
+            background: #222;
+            color: white;
+        }
+
+        .compare {
+            background: #555;
+            color: white;
+        }
+
+        .status {
+            font-weight: bold;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px #ddd;
+        }
+
+        .value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .section {
+            background: white;
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px #ddd;
+        }
+
+        .vm {
+            margin: 15px 0;
+        }
+
+        .bar {
+            height: 25px;
+            background: #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .fill {
+            height: 100%;
+            width: 0%;
+            background: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #f1f1f1;
+        }
+
+        .comparison-table {
+            margin-top: 10px;
+        }
+
+        .hybrid-row {
+            font-weight: bold;
+            background: #f0f0f0;
+        }
+
+        .comparison-status {
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 900px) {
+
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+        }
+
+        @media (max-width: 600px) {
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+
+            body {
+                padding: 15px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<h1>Hybrid PSO-GWO Cloud Task Scheduler</h1>
+
+<div class="subtitle">
+    CloudSim Plus | Dynamic Cloud Task Scheduling
+</div>
+
+
+<div class="controls">
+
+    <label for="taskCount">
+        <strong>Number of Tasks:</strong>
+    </label>
+
+    <input
+            type="number"
+            id="taskCount"
+            class="task-input"
+            value="20"
+            min="1"
+            max="1000"
+    >
+
+    <button
+            class="run"
+            onclick="runScheduler()">
+        Run Hybrid PSO-GWO
+    </button>
+
+    <button
+            class="compare"
+            onclick="compareSchedulers()">
+        Compare Schedulers
+    </button>
+
+    <span
+            class="status"
+            id="status">
+        Ready
+    </span>
+
+</div>
+
+
+<div class="cards">
+
+    <div class="card">
+        Tasks Completed
+
+        <div
+                class="value"
+                id="tasks">
+            -
+        </div>
+    </div>
+
+    <div class="card">
+        Makespan
+
+        <div
+                class="value"
+                id="makespan">
+            -
+        </div>
+    </div>
+
+    <div class="card">
+        Throughput
+
+        <div
+                class="value"
+                id="throughput">
+            -
+        </div>
+    </div>
+
+    <div class="card">
+        Load Balance
+
+        <div
+                class="value"
+                id="balance">
+            -
+        </div>
+    </div>
+
+</div>
+
+
+<div class="section">
+
+    <h2>VM Workload</h2>
+
+    <div id="vmWorkloads">
+        Run the scheduler to see VM workloads.
+    </div>
+
+</div>
+
+<div class="section">
+
+    <h2>Hybrid PSO-GWO Configuration</h2>
+
+    <table>
+
+        <tbody>
+
+        <tr>
+            <th>Virtual Machines</th>
+            <td>4</td>
+        </tr>
+
+        <tr>
+            <th>Population Size</th>
+            <td>20</td>
+        </tr>
+
+        <tr>
+            <th>Iterations</th>
+            <td>50</td>
+        </tr>
+
+        <tr>
+            <th>Research Task Length</th>
+            <td>100–1000 MI</td>
+        </tr>
+
+        <tr>
+            <th>Adaptive λ</th>
+            <td>0.90 → 0.40</td>
+        </tr>
+
+        <tr>
+            <th>Simulation Platform</th>
+            <td>CloudSim Plus</td>
+        </tr>
+
+        </tbody>
+
+    </table>
+
+    <p>
+        The Hybrid PSO-GWO scheduler combines Particle Swarm
+        Optimization and Grey Wolf Optimization. An adaptive
+        weighting factor λ changes from 0.90 to 0.40 during
+        optimization, controlling the contribution of the two
+        search strategies.
+    </p>
+
+</div>
+
+<div class="section">
+
+    <h2>Scheduler Comparison</h2>
+
+    <div
+            class="comparison-status"
+            id="comparisonStatus">
+        Click "Compare Schedulers" to run the controlled research experiment.
+    </div>
+
+    <table class="comparison-table">
+
+        <thead>
+
+        <tr>
+            <th>Scheduler</th>
+            <th>Makespan (s)</th>
+            <th>Throughput (tasks/s)</th>
+            <th>Load Balance (%)</th>
+        </tr>
+
+        </thead>
+
+        <tbody id="comparisonResults">
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+
+<div class="section">
+
+    <h2>Task Allocation</h2>
+
+    <table>
+
+        <thead>
+
+        <tr>
+            <th>Task</th>
+            <th>Length (MI)</th>
+            <th>Assigned VM</th>
+        </tr>
+
+        </thead>
+
+        <tbody id="allocations"></tbody>
+
+    </table>
+
+</div>
+
+
+<script>
+
+    async function runScheduler() {
+
+        const status =
+            document.getElementById("status");
+
+        const taskCount =
+            document.getElementById("taskCount").value;
+
+        status.textContent = "Running...";
+
+        try {
+
+            const response =
+                await fetch(
+                    `/api/run?taskCount=${taskCount}`,
+                    {
+                        method: "POST"
+                    }
+                );
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "HTTP " + response.status
+                );
+
+            }
+
+            const data =
+                await response.json();
+
+            document.getElementById("tasks")
+                .textContent =
+                data.tasksCompleted;
+
+            document.getElementById("makespan")
+                .textContent =
+                data.makespan.toFixed(2)
+                + " s";
+
+            document.getElementById("throughput")
+                .textContent =
+                data.throughput.toFixed(2)
+                + " tasks/s";
+
+            document.getElementById("balance")
+                .textContent =
+                data.loadBalance.toFixed(2)
+                + "%";
+
+            displayVMWorkloads(
+                data.vmWorkloads
+            );
+
+            displayAllocations(
+                data.allocations
+            );
+
+            status.textContent = "Completed";
+
+        } catch (error) {
+
+            console.error(error);
+
+            status.textContent = "Error";
+
+        }
+
+    }
+
+
+    async function compareSchedulers() {
+
+        const status =
+            document.getElementById(
+                "comparisonStatus"
+            );
+
+        status.textContent =
+            "Running comparison...";
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/compare",
+                    {
+                        method: "POST"
+                    }
+                );
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "HTTP " + response.status
+                );
+
+            }
+
+            const data =
+                await response.json();
+
+            displayComparison(
+                data.results
+            );
+
+            status.textContent =
+                "Controlled experiment: "
+                + data.tasks
+                + " tasks | "
+                + data.vms
+                + " VMs | Population "
+                + data.population
+                + " | "
+                + data.iterations
+                + " iterations";
+
+        } catch (error) {
+
+            console.error(error);
+
+            status.textContent =
+                "Comparison failed";
+
+        }
+
+    }
+
+
+    function displayComparison(results) {
+
+        const table =
+            document.getElementById(
+                "comparisonResults"
+            );
+
+        table.innerHTML = "";
+
+        results.forEach(result => {
+
+            const isHybrid =
+                result.scheduler ===
+                "Hybrid PSO-GWO";
+
+            const rowClass =
+                isHybrid
+                    ? "hybrid-row"
+                    : "";
+
+            table.innerHTML += `
+
+                <tr class="${rowClass}">
+
+                    <td>
+                        ${result.scheduler}
+                    </td>
+
+                    <td>
+                        ${result.makespan.toFixed(2)}
+                    </td>
+
+                    <td>
+                        ${result.throughput.toFixed(2)}
+                    </td>
+
+                    <td>
+                        ${result.loadBalance.toFixed(2)}
+                    </td>
+
+                </tr>
+
+            `;
+
+        });
+
+    }
+
+
+    function displayVMWorkloads(vms) {
+
+        const container =
+            document.getElementById(
+                "vmWorkloads"
+            );
+
+        container.innerHTML = "";
+
+        const maximum =
+            Math.max(
+                ...vms.map(
+                    vm => vm.workload
+                )
+            );
+
+        vms.forEach(vm => {
+
+            const percentage =
+                maximum > 0
+                    ? (vm.workload / maximum) * 100
+                    : 0;
+
+            container.innerHTML += `
+
+                <div class="vm">
+
+                    <strong>
+                        VM ${vm.vm}
+                    </strong>
+                    —
+                    ${vm.workload} MI
+
+                    <div class="bar">
+
+                        <div
+                            class="fill"
+                            style="width:${percentage}%">
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        });
+
+    }
+
+
+    function displayAllocations(tasks) {
+
+        const table =
+            document.getElementById(
+                "allocations"
+            );
+
+        table.innerHTML = "";
+
+        tasks.forEach(task => {
+
+            table.innerHTML += `
+
+                <tr>
+
+                    <td>
+                        ${task.task}
+                    </td>
+
+                    <td>
+                        ${task.length}
+                    </td>
+
+                    <td>
+                        VM ${task.vm}
+                    </td>
+
+                </tr>
+
+            `;
+
+        });
+
+    }
+
+</script>
+
+</body>
+
+</html>
