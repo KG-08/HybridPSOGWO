@@ -1,112 +1,99 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hybrid PSO-GWO Cloud Scheduler</title>
 
     <style>
-
-        body {
+        :root {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 30px;
+            color: #172033;
             background: #f4f6f8;
         }
 
-        h1 {
-            margin-bottom: 5px;
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 30px;
         }
 
-        .subtitle {
-            color: #666;
-            margin-bottom: 25px;
-        }
+        h1 { margin-bottom: 5px; }
+        h2 { margin-top: 0; }
+        .subtitle { color: #667085; margin-bottom: 25px; }
+        .muted { color: #667085; font-size: 14px; line-height: 1.6; }
 
         .controls {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
-        .task-input {
-            padding: 10px;
-            width: 80px;
+        input, select {
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
             font-size: 15px;
+            background: white;
         }
 
+        .task-input { width: 90px; }
+
         button {
-            padding: 12px 24px;
-            font-size: 16px;
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
             border: none;
             border-radius: 6px;
         }
 
-        .run {
-            background: #222;
-            color: white;
-        }
+        button:disabled { opacity: 0.55; cursor: wait; }
+        .run { background: #172033; color: white; }
+        .compare { background: #475569; color: white; }
+        .simulate { background: #1d4ed8; color: white; }
 
-        .compare {
-            background: #555;
-            color: white;
-        }
-
-        .status {
-            font-weight: bold;
-        }
-
+        .status { font-weight: bold; font-size: 14px; }
         .cards {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 15px;
             margin-top: 25px;
         }
 
-        .card {
+        .card, .section {
             background: white;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px #ddd;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #0000000b;
         }
 
         .value {
             font-size: 28px;
             font-weight: bold;
-            margin-top: 8px;
+            margin-top: 10px;
+            overflow-wrap: anywhere;
         }
 
-        .section {
-            background: white;
-            margin-top: 25px;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px #ddd;
-        }
+        .section { margin-top: 24px; }
+        .section h2 { margin-bottom: 14px; }
 
-        .vm {
-            margin: 15px 0;
-        }
-
+        .vm { margin: 15px 0; }
         .bar {
-            height: 25px;
-            background: #ddd;
+            height: 24px;
+            background: #e2e8f0;
             border-radius: 5px;
             overflow: hidden;
-            margin-top: 5px;
+            margin-top: 6px;
         }
 
         .fill {
             height: 100%;
-            width: 0%;
-            background: #333;
+            background: #334155;
+            transition: width 0.3s;
         }
 
         table {
@@ -114,531 +101,669 @@
             border-collapse: collapse;
         }
 
-        th,
-        td {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
+        th, td {
+            padding: 11px;
+            border-bottom: 1px solid #e2e8f0;
             text-align: left;
         }
 
-        th {
-            background: #f1f1f1;
-        }
-
-        .comparison-table {
-            margin-top: 10px;
-        }
-
-        .hybrid-row {
-            font-weight: bold;
-            background: #f0f0f0;
-        }
+        th { background: #f1f5f9; }
+        .table-wrap { overflow-x: auto; }
+        .comparison-table { margin-top: 10px; }
+        .hybrid-row { font-weight: bold; background: #eff6ff; }
 
         .comparison-status {
             margin-bottom: 15px;
             font-weight: bold;
         }
 
+        .sim-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .sim-stat {
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+            min-width: 0;
+        }
+
+        .sim-stat small {
+            display: block;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .sim-stat strong {
+            font-size: 23px;
+            overflow-wrap: anywhere;
+        }
+
+        .weight-track {
+            display: flex;
+            width: 100%;
+            height: 22px;
+            overflow: hidden;
+            border-radius: 6px;
+            margin: 12px 0 6px;
+            background: #e2e8f0;
+        }
+
+        .gwo-weight {
+            width: 90%;
+            background: #2563eb;
+            transition: width 0.15s;
+        }
+
+        .pso-weight {
+            width: 10%;
+            background: #f59e0b;
+            transition: width 0.15s;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            font-size: 13px;
+            color: #475569;
+            margin: 10px 0;
+        }
+
+        .legend span { display: inline-flex; align-items: center; gap: 6px; }
+        .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+        .blue { background: #2563eb; }
+        .orange { background: #f59e0b; }
+
+        .progress-track {
+            width: 100%;
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 18px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #2563eb;
+            transition: width 0.1s linear;
+        }
+
+        .chart-wrap {
+            width: 100%;
+            margin-top: 18px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 320px;
+        }
+
+        .result-box {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .result-grid div {
+            padding: 12px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+
+        .result-grid small { display: block; color: #64748b; margin-bottom: 7px; }
+        .error { color: #b91c1c; }
+        .success { color: #166534; }
+
         @media (max-width: 900px) {
-
-            .cards {
-                grid-template-columns: repeat(2, 1fr);
+            .cards, .sim-grid, .result-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
-
         }
 
         @media (max-width: 600px) {
-
-            .cards {
-                grid-template-columns: 1fr;
-            }
-
-            body {
-                padding: 15px;
-            }
-
+            body { padding: 15px; }
+            .cards, .sim-grid, .result-grid { grid-template-columns: 1fr; }
+            .value { font-size: 24px; }
+            canvas { height: 260px; }
         }
-
     </style>
-
 </head>
 
 <body>
-
 <h1>Hybrid PSO-GWO Cloud Task Scheduler</h1>
-
-<div class="subtitle">
-    CloudSim Plus | Dynamic Cloud Task Scheduling
-</div>
-
+<div class="subtitle">CloudSim Plus | Dynamic Cloud Task Scheduling</div>
 
 <div class="controls">
+    <label for="taskCount"><strong>Number of Tasks:</strong></label>
+    <input type="number" id="taskCount" class="task-input"
+           value="20" min="1" max="1000">
 
-    <label for="taskCount">
-        <strong>Number of Tasks:</strong>
-    </label>
-
-    <input
-            type="number"
-            id="taskCount"
-            class="task-input"
-            value="20"
-            min="1"
-            max="1000"
-    >
-
-    <button
-            class="run"
-            onclick="runScheduler()">
+    <button class="run" id="runButton" onclick="runScheduler()">
         Run Hybrid PSO-GWO
     </button>
 
-    <button
-            class="compare"
-            onclick="compareSchedulers()">
+    <button class="compare" id="compareButton" onclick="compareSchedulers()">
         Compare Schedulers
     </button>
 
-    <span
-            class="status"
-            id="status">
-        Ready
-    </span>
-
+    <span class="status" id="status">Ready</span>
 </div>
-
 
 <div class="cards">
-
-    <div class="card">
-        Tasks Completed
-
-        <div
-                class="value"
-                id="tasks">
-            -
-        </div>
-    </div>
-
-    <div class="card">
-        Makespan
-
-        <div
-                class="value"
-                id="makespan">
-            -
-        </div>
-    </div>
-
-    <div class="card">
-        Throughput
-
-        <div
-                class="value"
-                id="throughput">
-            -
-        </div>
-    </div>
-
-    <div class="card">
-        Load Balance
-
-        <div
-                class="value"
-                id="balance">
-            -
-        </div>
-    </div>
-
+    <div class="card">Tasks Completed<div class="value" id="tasks">-</div></div>
+    <div class="card">Makespan<div class="value" id="makespan">-</div></div>
+    <div class="card">Throughput<div class="value" id="throughput">-</div></div>
+    <div class="card">Load Balance<div class="value" id="balance">-</div></div>
 </div>
 
-
 <div class="section">
-
     <h2>VM Workload</h2>
-
-    <div id="vmWorkloads">
-        Run the scheduler to see VM workloads.
-    </div>
-
+    <div id="vmWorkloads">Run the scheduler to see VM workloads.</div>
 </div>
 
 <div class="section">
-
-    <h2>Hybrid PSO-GWO Configuration</h2>
-
-    <table>
-
-        <tbody>
-
-        <tr>
-            <th>Virtual Machines</th>
-            <td>4</td>
-        </tr>
-
-        <tr>
-            <th>Population Size</th>
-            <td>20</td>
-        </tr>
-
-        <tr>
-            <th>Iterations</th>
-            <td>50</td>
-        </tr>
-
-        <tr>
-            <th>Research Task Length</th>
-            <td>100–1000 MI</td>
-        </tr>
-
-        <tr>
-            <th>Adaptive λ</th>
-            <td>0.90 → 0.40</td>
-        </tr>
-
-        <tr>
-            <th>Simulation Platform</th>
-            <td>CloudSim Plus</td>
-        </tr>
-
-        </tbody>
-
-    </table>
-
-    <p>
-        The Hybrid PSO-GWO scheduler combines Particle Swarm
-        Optimization and Grey Wolf Optimization. An adaptive
-        weighting factor λ changes from 0.90 to 0.40 during
-        optimization, controlling the contribution of the two
-        search strategies.
+    <h2>Adaptive Lambda Simulation</h2>
+    <p class="muted">
+        Run the hybrid optimizer and visualize the recorded lambda weight at each
+        optimization iteration. The animation replays the recorded history after
+        the scheduling request finishes; it is a visualization, not a live
+        stream of task arrivals.
     </p>
 
-</div>
-
-<div class="section">
-
-    <h2>Scheduler Comparison</h2>
-
-    <div
-            class="comparison-status"
-            id="comparisonStatus">
-        Click "Compare Schedulers" to run the controlled research experiment.
+    <div class="controls">
+        <label for="simulationTasks"><strong>Simulation tasks:</strong></label>
+        <select id="simulationTasks">
+            <option value="20" selected>20 tasks</option>
+            <option value="50">50 tasks</option>
+            <option value="100">100 tasks</option>
+            <option value="200">200 tasks</option>
+            <option value="500">500 tasks</option>
+        </select>
+        <button class="simulate" id="startSimulation" onclick="startLambdaSimulation()">
+            Start Lambda Simulation
+        </button>
     </div>
 
-    <table class="comparison-table">
+    <div class="sim-grid">
+        <div class="sim-stat">
+            <small>Tasks submitted</small>
+            <strong id="simTasks">-</strong>
+        </div>
+        <div class="sim-stat">
+            <small>Iteration</small>
+            <strong id="simIteration">0 / 0</strong>
+        </div>
+        <div class="sim-stat">
+            <small>Lambda (λ)</small>
+            <strong id="simLambda">-</strong>
+        </div>
+        <div class="sim-stat">
+            <small>GWO / PSO weights</small>
+            <strong id="simWeights">-</strong>
+        </div>
+    </div>
 
-        <thead>
+    <div class="legend">
+        <span><i class="dot blue"></i> GWO coefficient (λ)</span>
+        <span><i class="dot orange"></i> PSO coefficient (1 − λ)</span>
+    </div>
 
-        <tr>
-            <th>Scheduler</th>
-            <th>Makespan (s)</th>
-            <th>Throughput (tasks/s)</th>
-            <th>Load Balance (%)</th>
-        </tr>
+    <div class="weight-track" aria-label="Current GWO and PSO coefficients">
+        <div class="gwo-weight" id="gwoWeight"></div>
+        <div class="pso-weight" id="psoWeight"></div>
+    </div>
+    <div class="muted" id="weightDescription">
+        GWO starts with a larger coefficient; the PSO coefficient increases as λ decreases.
+    </div>
 
-        </thead>
+    <div class="progress-track">
+        <div class="progress-fill" id="simProgress"></div>
+    </div>
+    <p id="simStatus" class="muted" aria-live="polite">Ready to simulate.</p>
 
-        <tbody id="comparisonResults">
+    <div class="chart-wrap">
+        <h3>Lambda versus Optimization Iteration</h3>
+        <canvas id="lambdaChart" role="img"
+                aria-label="Line graph of lambda against optimization iteration"></canvas>
+        <p class="muted" id="chartCaption">
+            Run the simulation to generate a graph from the optimizer's recorded values.
+        </p>
+    </div>
 
-        </tbody>
-
-    </table>
-
+    <div id="simulationResults" class="result-box" hidden>
+        <h3>Final Simulation Results</h3>
+        <div class="result-grid">
+            <div><small>Tasks completed</small><strong id="simCompleted">-</strong></div>
+            <div><small>Makespan</small><strong id="simMakespan">-</strong></div>
+            <div><small>Throughput</small><strong id="simThroughput">-</strong></div>
+            <div><small>Load balance</small><strong id="simBalance">-</strong></div>
+        </div>
+        <h3>Final Task Allocation</h3>
+        <div id="simAllocationSummary" class="muted"></div>
+    </div>
 </div>
-
-
 
 <div class="section">
-
-    <h2>Task Allocation</h2>
-
-    <table>
-
-        <thead>
-
-        <tr>
-            <th>Task</th>
-            <th>Length (MI)</th>
-            <th>Assigned VM</th>
-        </tr>
-
-        </thead>
-
-        <tbody id="allocations"></tbody>
-
-    </table>
-
+    <h2>Hybrid PSO-GWO Configuration</h2>
+    <div class="table-wrap">
+        <table>
+            <tbody>
+            <tr><th>Virtual Machines</th><td>4</td></tr>
+            <tr><th>Population Size</th><td>20</td></tr>
+            <tr><th>Iterations (live run)</th><td>20</td></tr>
+            <tr><th>Iterations (controlled comparison)</th><td>50</td></tr>
+            <tr><th>Task Length (live generator)</th><td>100–2000 MI</td></tr>
+            <tr><th>Research Task Length</th><td>100–1000 MI</td></tr>
+            <tr><th>Adaptive λ</th><td>0.90 → 0.40</td></tr>
+            <tr><th>Simulation Platform</th><td>CloudSim Plus</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="muted">
+        The hybrid scheduler combines Particle Swarm Optimization and Grey Wolf
+        Optimization using Xnew = λXGWO + (1 − λ)XPSO. Lambda decreases across
+        optimizer iterations. It is controlled by iteration progress, not directly
+        by the number of tasks submitted.
+    </p>
 </div>
 
+<div class="section">
+    <h2>Scheduler Comparison</h2>
+    <div class="comparison-status" id="comparisonStatus">
+        Click "Compare Schedulers" to run the controlled research experiment.
+    </div>
+    <div class="table-wrap">
+        <table class="comparison-table">
+            <thead>
+            <tr>
+                <th>Scheduler</th>
+                <th>Makespan (s)</th>
+                <th>Throughput (tasks/s)</th>
+                <th>Load Balance (%)</th>
+            </tr>
+            </thead>
+            <tbody id="comparisonResults"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Task Allocation</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+            <tr><th>Task</th><th>Length (MI)</th><th>Assigned VM</th></tr>
+            </thead>
+            <tbody id="allocations"></tbody>
+        </table>
+    </div>
+</div>
 
 <script>
+    let simulationRunning = false;
+    let lastLambdaHistory = [];
+
+    function setText(id, value) {
+        document.getElementById(id).textContent = value;
+    }
+
+    function validateTaskCount(value) {
+        const count = Number(value);
+        if (!Number.isInteger(count) || count < 1 || count > 1000) {
+            throw new Error("Task count must be an integer between 1 and 1000.");
+        }
+        return count;
+    }
+
+    async function postRun(taskCount) {
+        const response = await fetch(`/api/run?taskCount=${taskCount}`, {
+            method: "POST"
+        });
+
+        if (!response.ok) {
+            throw new Error(`Scheduler returned HTTP ${response.status}`);
+        }
+
+        return response.json();
+    }
+
+    function displayRunResults(data) {
+        setText("tasks", data.tasksCompleted);
+        setText("makespan", Number(data.makespan).toFixed(2) + " s");
+        setText("throughput", Number(data.throughput).toFixed(2) + " tasks/s");
+        setText("balance", Number(data.loadBalance).toFixed(2) + "%");
+
+        displayVMWorkloads(data.vmWorkloads || []);
+        displayAllocations(data.allocations || []);
+    }
 
     async function runScheduler() {
-
-        const status =
-            document.getElementById("status");
-
-        const taskCount =
-            document.getElementById("taskCount").value;
-
-        status.textContent = "Running...";
+        const button = document.getElementById("runButton");
+        button.disabled = true;
+        setText("status", "Running...");
 
         try {
-
-            const response =
-                await fetch(
-                    `/api/run?taskCount=${taskCount}`,
-                    {
-                        method: "POST"
-                    }
-                );
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "HTTP " + response.status
-                );
-
-            }
-
-            const data =
-                await response.json();
-
-            document.getElementById("tasks")
-                .textContent =
-                data.tasksCompleted;
-
-            document.getElementById("makespan")
-                .textContent =
-                data.makespan.toFixed(2)
-                + " s";
-
-            document.getElementById("throughput")
-                .textContent =
-                data.throughput.toFixed(2)
-                + " tasks/s";
-
-            document.getElementById("balance")
-                .textContent =
-                data.loadBalance.toFixed(2)
-                + "%";
-
-            displayVMWorkloads(
-                data.vmWorkloads
-            );
-
-            displayAllocations(
-                data.allocations
-            );
-
-            status.textContent = "Completed";
-
+            const count = validateTaskCount(document.getElementById("taskCount").value);
+            const data = await postRun(count);
+            displayRunResults(data);
+            setText("status", "Completed");
         } catch (error) {
-
             console.error(error);
-
-            status.textContent = "Error";
-
+            setText("status", error.message);
+        } finally {
+            button.disabled = false;
         }
-
     }
-
 
     async function compareSchedulers() {
-
-        const status =
-            document.getElementById(
-                "comparisonStatus"
-            );
-
-        status.textContent =
-            "Running comparison...";
+        const button = document.getElementById("compareButton");
+        button.disabled = true;
+        setText("comparisonStatus", "Running comparison...");
 
         try {
-
-            const response =
-                await fetch(
-                    "/api/compare",
-                    {
-                        method: "POST"
-                    }
-                );
-
+            const response = await fetch("/api/compare", { method: "POST" });
             if (!response.ok) {
-
-                throw new Error(
-                    "HTTP " + response.status
-                );
-
+                throw new Error(`Comparison returned HTTP ${response.status}`);
             }
 
-            const data =
-                await response.json();
+            const data = await response.json();
+            displayComparison(data.results || []);
 
-            displayComparison(
-                data.results
+            setText(
+                "comparisonStatus",
+                `Controlled experiment: ${data.tasks} tasks | ${data.vms} VMs | ` +
+                `Population ${data.population} | ${data.iterations} iterations`
             );
-
-            status.textContent =
-                "Controlled experiment: "
-                + data.tasks
-                + " tasks | "
-                + data.vms
-                + " VMs | Population "
-                + data.population
-                + " | "
-                + data.iterations
-                + " iterations";
-
         } catch (error) {
-
             console.error(error);
-
-            status.textContent =
-                "Comparison failed";
-
+            setText("comparisonStatus", "Comparison failed: " + error.message);
+        } finally {
+            button.disabled = false;
         }
-
     }
-
 
     function displayComparison(results) {
-
-        const table =
-            document.getElementById(
-                "comparisonResults"
-            );
-
-        table.innerHTML = "";
+        const table = document.getElementById("comparisonResults");
+        table.replaceChildren();
 
         results.forEach(result => {
+            const row = document.createElement("tr");
+            if (result.scheduler === "Hybrid PSO-GWO") {
+                row.className = "hybrid-row";
+            }
 
-            const isHybrid =
-                result.scheduler ===
-                "Hybrid PSO-GWO";
+            [
+                result.scheduler,
+                Number(result.makespan).toFixed(2),
+                Number(result.throughput).toFixed(2),
+                Number(result.loadBalance).toFixed(2)
+            ].forEach(value => {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                row.appendChild(cell);
+            });
 
-            const rowClass =
-                isHybrid
-                    ? "hybrid-row"
-                    : "";
-
-            table.innerHTML += `
-
-                <tr class="${rowClass}">
-
-                    <td>
-                        ${result.scheduler}
-                    </td>
-
-                    <td>
-                        ${result.makespan.toFixed(2)}
-                    </td>
-
-                    <td>
-                        ${result.throughput.toFixed(2)}
-                    </td>
-
-                    <td>
-                        ${result.loadBalance.toFixed(2)}
-                    </td>
-
-                </tr>
-
-            `;
-
+            table.appendChild(row);
         });
-
     }
-
 
     function displayVMWorkloads(vms) {
+        const container = document.getElementById("vmWorkloads");
+        container.replaceChildren();
 
-        const container =
-            document.getElementById(
-                "vmWorkloads"
-            );
-
-        container.innerHTML = "";
-
-        const maximum =
-            Math.max(
-                ...vms.map(
-                    vm => vm.workload
-                )
-            );
+        const maximum = Math.max(0, ...vms.map(vm => Number(vm.workload)));
 
         vms.forEach(vm => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "vm";
 
-            const percentage =
-                maximum > 0
-                    ? (vm.workload / maximum) * 100
-                    : 0;
+            const label = document.createElement("strong");
+            label.textContent = `VM ${vm.vm} — ${vm.workload} MI`;
 
-            container.innerHTML += `
+            const bar = document.createElement("div");
+            bar.className = "bar";
 
-                <div class="vm">
+            const fill = document.createElement("div");
+            fill.className = "fill";
+            fill.style.width = maximum > 0
+                ? `${Number(vm.workload) / maximum * 100}%`
+                : "0%";
 
-                    <strong>
-                        VM ${vm.vm}
-                    </strong>
-                    —
-                    ${vm.workload} MI
-
-                    <div class="bar">
-
-                        <div
-                            class="fill"
-                            style="width:${percentage}%">
-                        </div>
-
-                    </div>
-
-                </div>
-
-            `;
-
+            bar.appendChild(fill);
+            wrapper.append(label, bar);
+            container.appendChild(wrapper);
         });
-
     }
-
 
     function displayAllocations(tasks) {
-
-        const table =
-            document.getElementById(
-                "allocations"
-            );
-
-        table.innerHTML = "";
+        const table = document.getElementById("allocations");
+        table.replaceChildren();
 
         tasks.forEach(task => {
+            const row = document.createElement("tr");
 
-            table.innerHTML += `
+            [
+                task.task,
+                task.length,
+                `VM ${task.vm}`
+            ].forEach(value => {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                row.appendChild(cell);
+            });
 
-                <tr>
-
-                    <td>
-                        ${task.task}
-                    </td>
-
-                    <td>
-                        ${task.length}
-                    </td>
-
-                    <td>
-                        VM ${task.vm}
-                    </td>
-
-                </tr>
-
-            `;
-
+            table.appendChild(row);
         });
-
     }
 
+    function drawLambdaChart(history, revealedCount = history.length) {
+        const canvas = document.getElementById("lambdaChart");
+        const rect = canvas.getBoundingClientRect();
+        const cssWidth = Math.max(rect.width, 300);
+        const cssHeight = window.innerWidth <= 600 ? 260 : 320;
+        const dpr = window.devicePixelRatio || 1;
+
+        canvas.width = Math.round(cssWidth * dpr);
+        canvas.height = Math.round(cssHeight * dpr);
+
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+        const pad = { left: 48, right: 18, top: 22, bottom: 42 };
+        const plotW = cssWidth - pad.left - pad.right;
+        const plotH = cssHeight - pad.top - pad.bottom;
+        const minY = 0.3;
+        const maxY = 1.0;
+
+        ctx.font = "12px Arial";
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.fillStyle = "#64748b";
+
+        for (let value = 0.4; value <= 1.0001; value += 0.2) {
+            const y = pad.top + (maxY - value) / (maxY - minY) * plotH;
+
+            ctx.beginPath();
+            ctx.moveTo(pad.left, y);
+            ctx.lineTo(cssWidth - pad.right, y);
+            ctx.stroke();
+
+            ctx.fillText(value.toFixed(1), 12, y + 4);
+        }
+
+        const shown = history.slice(0, revealedCount);
+        if (shown.length === 0) return;
+
+        const points = shown.map((value, index) => ({
+            x: pad.left + (history.length === 1
+                ? plotW / 2
+                : index / (history.length - 1) * plotW),
+            y: pad.top + (maxY - value) / (maxY - minY) * plotH
+        }));
+
+        ctx.strokeStyle = "#2563eb";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+
+        points.forEach((point, index) => {
+            if (index === 0) ctx.moveTo(point.x, point.y);
+            else ctx.lineTo(point.x, point.y);
+        });
+
+        ctx.stroke();
+
+        points.forEach(point => {
+            ctx.beginPath();
+            ctx.fillStyle = "#2563eb";
+            ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        ctx.fillStyle = "#475569";
+        ctx.fillText("Optimization iteration", cssWidth / 2 - 58, cssHeight - 8);
+        ctx.fillText("1", pad.left - 3, cssHeight - 22);
+        ctx.fillText(String(history.length), cssWidth - pad.right - 15, cssHeight - 22);
+    }
+
+    function updateLambdaDisplay(lambda, index, total) {
+        const gwoPercent = lambda * 100;
+        const psoPercent = (1 - lambda) * 100;
+
+        setText("simIteration", `${index + 1} / ${total}`);
+        setText("simLambda", lambda.toFixed(3));
+        setText(
+            "simWeights",
+            `${gwoPercent.toFixed(1)}% / ${psoPercent.toFixed(1)}%`
+        );
+
+        document.getElementById("gwoWeight").style.width = `${gwoPercent}%`;
+        document.getElementById("psoWeight").style.width = `${psoPercent}%`;
+
+        document.getElementById("simProgress").style.width =
+            `${(index + 1) / total * 100}%`;
+
+        setText(
+            "weightDescription",
+            `GWO coefficient: ${lambda.toFixed(3)}; PSO coefficient: ${(1 - lambda).toFixed(3)}.`
+        );
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function startLambdaSimulation() {
+        if (simulationRunning) return;
+
+        simulationRunning = true;
+        const button = document.getElementById("startSimulation");
+        button.disabled = true;
+
+        document.getElementById("simulationResults").hidden = true;
+        setText("simStatus", "Generating tasks and running the optimizer...");
+        setText("chartCaption", "Waiting for recorded lambda values...");
+        setText("simIteration", "0 / 0");
+        setText("simLambda", "-");
+        setText("simWeights", "-");
+        setText("simTasks", "-");
+        document.getElementById("simProgress").style.width = "0%";
+
+        try {
+            const count = validateTaskCount(
+                document.getElementById("simulationTasks").value
+            );
+
+            // This endpoint runs the actual scheduler and CloudSim simulation.
+            const data = await postRun(count);
+            const history = data.lambdaHistory;
+
+            if (!Array.isArray(history) || history.length < 2) {
+                throw new Error(
+                    "The API did not return lambdaHistory. " +
+                    "Check that the updated Java files are running."
+                );
+            }
+
+            if (!history.every(value =>
+                Number.isFinite(value) && value >= 0 && value <= 1
+            )) {
+                throw new Error("The returned lambda history contains invalid values.");
+            }
+
+            lastLambdaHistory = history.slice();
+            setText("simTasks", data.tasksSubmitted);
+            setText("simStatus", "Replaying recorded optimization iterations...");
+
+            // Animate the recorded history; this is not a second scheduler run.
+            const delay = Math.max(45, Math.min(120, 2400 / history.length));
+
+            for (let i = 0; i < history.length; i++) {
+                updateLambdaDisplay(history[i], i, history.length);
+                drawLambdaChart(history, i + 1);
+                await sleep(delay);
+            }
+
+            displayRunResults(data);
+
+            setText("simStatus", "Simulation completed.");
+            setText(
+                "chartCaption",
+                `${history.length} lambda values recorded from ` +
+                `${history[0].toFixed(3)} to ${history[history.length - 1].toFixed(3)}.`
+            );
+
+            setText("simCompleted", data.tasksCompleted);
+            setText("simMakespan", Number(data.makespan).toFixed(3) + " s");
+            setText("simThroughput", Number(data.throughput).toFixed(3) + " tasks/s");
+            setText("simBalance", Number(data.loadBalance).toFixed(2) + "%");
+
+            const vmCounts = new Map();
+            (data.allocations || []).forEach(allocation => {
+                const key = `VM ${allocation.vm}`;
+                vmCounts.set(key, (vmCounts.get(key) || 0) + 1);
+            });
+
+            setText(
+                "simAllocationSummary",
+                [...vmCounts.entries()]
+                    .map(([vm, taskCount]) => `${vm}: ${taskCount} tasks`)
+                    .join(" | ") || "No allocation data returned."
+            );
+
+            document.getElementById("simulationResults").hidden = false;
+        } catch (error) {
+            console.error(error);
+            setText("simStatus", "Simulation failed: " + error.message);
+            setText("chartCaption", "No completed graph available.");
+        } finally {
+            simulationRunning = false;
+            button.disabled = false;
+        }
+    }
+
+    window.addEventListener("resize", () => {
+        if (lastLambdaHistory.length > 0) {
+            drawLambdaChart(lastLambdaHistory);
+        }
+    });
 </script>
-
 </body>
-
 </html>

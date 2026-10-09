@@ -1,3 +1,4 @@
+
 package org.kandarp;
 
 import org.cloudsimplus.brokers.DatacenterBroker;
@@ -45,8 +46,7 @@ public class RunController {
 
         LiveTaskGenerator generator = new LiveTaskGenerator();
 
-        List<Cloudlet> tasks =
-                generator.generateTasks(taskCount);
+        List<Cloudlet> tasks = generator.generateTasks(taskCount);
 
         HybridPSOGWOScheduler scheduler =
                 new HybridPSOGWOScheduler(
@@ -74,19 +74,16 @@ public class RunController {
         List<Cloudlet> finished =
                 broker.getCloudletFinishedList();
 
-        double makespan =
-                finished.stream()
-                        .mapToDouble(Cloudlet::getFinishTime)
-                        .max()
-                        .orElse(0);
+        double makespan = finished.stream()
+                .mapToDouble(Cloudlet::getFinishTime)
+                .max()
+                .orElse(0);
 
-        double throughput =
-                makespan > 0
-                        ? finished.size() / makespan
-                        : 0;
+        double throughput = makespan > 0
+                ? finished.size() / makespan
+                : 0;
 
-        double[] workloads =
-                scheduler.getVmWorkloads();
+        double[] workloads = scheduler.getVmWorkloads();
 
         double minimum = Double.MAX_VALUE;
         double maximum = Double.MIN_VALUE;
@@ -96,42 +93,26 @@ public class RunController {
             maximum = Math.max(maximum, workload);
         }
 
-        double loadBalance =
-                maximum > 0
-                        ? (minimum / maximum) * 100
-                        : 100;
+        double loadBalance = maximum > 0
+                ? (minimum / maximum) * 100
+                : 100;
 
-        List<Map<String, Object>> allocations =
-                new ArrayList<>();
+        List<Map<String, Object>> allocations = new ArrayList<>();
 
         for (int i = 0; i < tasks.size(); i++) {
-            Map<String, Object> allocation =
-                    new HashMap<>();
+            Map<String, Object> allocation = new HashMap<>();
 
-            allocation.put(
-                    "task",
-                    tasks.get(i).getId()
-            );
-
-            allocation.put(
-                    "length",
-                    tasks.get(i).getLength()
-            );
-
-            allocation.put(
-                    "vm",
-                    mapping[i]
-            );
+            allocation.put("task", tasks.get(i).getId());
+            allocation.put("length", tasks.get(i).getLength());
+            allocation.put("vm", mapping[i]);
 
             allocations.add(allocation);
         }
 
-        List<Map<String, Object>> vmData =
-                new ArrayList<>();
+        List<Map<String, Object>> vmData = new ArrayList<>();
 
         for (int i = 0; i < workloads.length; i++) {
-            Map<String, Object> vm =
-                    new HashMap<>();
+            Map<String, Object> vm = new HashMap<>();
 
             vm.put("vm", i);
             vm.put("workload", workloads[i]);
@@ -139,75 +120,31 @@ public class RunController {
             vmData.add(vm);
         }
 
-        Map<String, Object> result =
-                new HashMap<>();
+        Map<String, Object> result = new HashMap<>();
 
-        result.put(
-                "scheduler",
-                "Hybrid PSO-GWO"
-        );
+        result.put("scheduler", "Hybrid PSO-GWO");
+        result.put("simulation", "CloudSim Plus");
+        result.put("tasksSubmitted", tasks.size());
+        result.put("tasksCompleted", finished.size());
+        result.put("makespan", makespan);
+        result.put("throughput", throughput);
+        result.put("bestFitness", scheduler.getBestFitness());
+        result.put("loadBalance", loadBalance);
+        result.put("allocations", allocations);
+        result.put("vmWorkloads", vmData);
 
-        result.put(
-                "simulation",
-                "CloudSim Plus"
-        );
-
-        result.put(
-                "tasksSubmitted",
-                tasks.size()
-        );
-
-        result.put(
-                "tasksCompleted",
-                finished.size()
-        );
-
-        result.put(
-                "makespan",
-                makespan
-        );
-
-        result.put(
-                "throughput",
-                throughput
-        );
-
-        result.put(
-                "bestFitness",
-                scheduler.getBestFitness()
-        );
-
-        result.put(
-                "loadBalance",
-                loadBalance
-        );
-
-        result.put(
-                "allocations",
-                allocations
-        );
-
-        result.put(
-                "vmWorkloads",
-                vmData
-        );
+        // Actual lambda values used during the optimization iterations.
+        result.put("lambdaHistory", scheduler.getLambdaHistory());
 
         return result;
     }
 
     private List<Host> createHosts() {
-
-        List<Host> hosts =
-                new ArrayList<>();
+        List<Host> hosts = new ArrayList<>();
 
         for (int i = 0; i < 4; i++) {
-
-            List<Pe> peList =
-                    new ArrayList<>();
-
-            peList.add(
-                    new PeSimple(1000)
-            );
+            List<Pe> peList = new ArrayList<>();
+            peList.add(new PeSimple(1000));
 
             hosts.add(
                     new HostSimple(
@@ -223,14 +160,10 @@ public class RunController {
     }
 
     private List<Vm> createVMs() {
-
-        List<Vm> vms =
-                new ArrayList<>();
+        List<Vm> vms = new ArrayList<>();
 
         for (int i = 0; i < 4; i++) {
-
-            Vm vm =
-                    new VmSimple(1000, 1);
+            Vm vm = new VmSimple(1000, 1);
 
             vm.setRam(2048)
                     .setBw(1000)
@@ -242,3 +175,4 @@ public class RunController {
         return vms;
     }
 }
+
